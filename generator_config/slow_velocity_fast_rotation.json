@@ -1,0 +1,98 @@
+{
+    "name": "Mnist_LeNet",
+    "n_gpu": 1,
+
+    "arch": {
+        "type": "FlowNet",
+        "args": {
+            "unet_kwargs": {
+				"num_bins": 5,
+                "skip_type": "sum",
+                "recurrent_block_type": "convlstm",
+                "num_encoders": 3,
+                "base_num_channels": 32,
+                "num_residual_blocks": 2,
+                "use_upsample_conv": true,
+                "norm": "none"
+            }
+        }
+    },
+    "data_loader": {
+        "type": "HenriDataLoader",
+        "args":{
+            "data_file": "/tmp/data_file.txt",
+            "batch_size": 1,
+            "shuffle": true,
+            "num_workers": 2,
+            "pin_memory": true,
+            "dataset_kwargs": {
+                "sequence_length": 40,
+                "item_kwargs": {
+                    "event_folder": "VoxelGrid-betweenframes-5",
+                    "frame_folder": "frames",
+                    "flow_folder": "flow",
+                    "transforms": {
+                        "RandomCrop": {"size": 128},
+                        "RandomFlip": {}
+                    },
+                    "max_length": 200
+                }
+            }
+        }
+    },
+    "valid_data_loader": {
+        "type": "HenriDataLoader",
+        "args":{
+            "data_file": "/tmp/data_file.txt",
+            "batch_size": 1,
+            "shuffle": true,
+            "num_workers": 2,
+            "pin_memory": true,
+            "dataset_kwargs": {
+                "sequence_length": 40,
+                "item_kwargs": {
+                    "event_folder": "VoxelGrid-betweenframes-5",
+                    "frame_folder": "frames",
+                    "flow_folder": "flow",
+                    "transforms": {
+                        "CenterCrop": {"size": 160}
+                    },
+                    "max_length": 200
+                }
+            }
+        }
+    },
+    "optimizer": {
+        "type": "Adam",
+        "args":{
+            "lr": 0.001,
+            "weight_decay": 0,
+            "amsgrad": true
+        }
+    },
+    "loss_ftns": {
+        "temporal_consistency_loss": {"weight": 1.0},
+        "flow_loss": {"weight": 1.0}
+    },
+    "lr_scheduler": {
+        "type": "StepLR",
+        "args": {
+            "step_size": 50,
+            "gamma": 0.1
+        }
+    },
+    "trainer": {
+        "epochs": 100,
+
+        "save_dir": "saved/",
+        "save_period": 1,
+        "verbosity": 2,
+        
+        "monitor": "min val_loss",
+        "early_stop": 10,
+
+        "num_previews": 4,
+
+        "tensorboard": true
+    }
+}

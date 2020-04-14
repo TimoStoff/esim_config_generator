@@ -1,0 +1,36 @@
+{
+    "name": "slow_v_slow_r",
+    "foreground_params": {
+		"fg_min_ang_velocity_deg": 0,
+		"fg_max_ang_velocity_deg": 5.0,
+		"fg_min_velocity": 0.5,
+		"fg_max_velocity": 30.0,
+		"fg_growthmin": 0.5,
+		"fg_growthmax": 1.5
+        },
+    "background_params": {
+		"bg_min_ang_velocity_deg": 0,
+		"bg_max_ang_velocity_deg": 5,
+		"bg_min_velocity": 0.5,
+		"bg_max_velocity": 10,
+		"bg_growthmin": 1.0,
+		"bg_growthmax": 1.5
+        },
+	"foreground_images": {
+		"png_dataset": {
+			"path": "/home/timo/Data2/esim_objects",
+			"min_num": 2,
+			"max_num" 10
+		},	
+		"coco_dataset": {
+			"path": "/home/timo/Data2/coco",
+			"min_num": 2,
+			"max_num" 10
+		}	
+    },
+	"background_images": {
+		"coco_dataset": {
+			"path": "/home/timo/Data2/coco"
+		}	
+    }
+ }
