@@ -2,6 +2,8 @@
 import argparse
 import numpy as np
 import pandas as pd
+import json
+from collections import OrderedDict
 import random
 import glob
 import os
@@ -13,13 +15,12 @@ from matplotlib.patches import Rectangle
 PI = 3.1415926
 
 def generate_config_file(output_path_cfg, output_path, contrast_threshold_mean=0.75, contrast_threshold_sigma=0.3, ct_diff_sigma=0.1,
-                         min_C=0.1, max_C=8, hard_c_t_sigmas=0.0001, refractory_period_ns=1000000,
-                         bag_name="/tmp/out.bag", iteration_number=0, sim_framerate=100):
-   # # Super high biases
-   # contrast_threshold_mean = (iteration_number+1.0)/10.0 #0.4
-   # contrast_threshold_sigma = 0.0
-   # max_C = 5.0
-    print("iter {}: contrast thresh = {}".format(iteration_number, contrast_threshold_mean))
+                         min_C=0.01, max_C=8, hard_c_t_sigmas=0.0001, refractory_period_ns=1000000,
+                         bag_name="/tmp/out.bag", scene_id=0, sim_framerate=100):
+    """
+    Generate the config file for the simulator (ie event camera settings)
+    """
+    print("sim fr = {}".format(sim_framerate))
     fcfg = open(output_path_cfg, "w")
     fcfg.write("\n--vmodule=data_provider_online_simple=0" +
                "\n--data_source=1" +
@@ -29,7 +30,7 @@ def generate_config_file(output_path_cfg, output_path, contrast_threshold_mean=0
 
     c1 = contrast_threshold_mean
     c2 = np.random.normal(1, ct_diff_sigma)*c1
-    if iteration_number%2==0:
+    if scene_id%2==0:
         contrast_threshold_pos = c1
         contrast_threshold_neg = c2
     else:
@@ -89,6 +90,14 @@ def get_abs_coords_from_vec(vec):
 
 
 def get_random_translations(speed, duration, image_size):
+    """
+    Get motion vectors through a rectangle of width 1, centered
+    at 0, 0 (the virtual image plane), which have a trajectory
+    length such that the given speed of the motion occurs, given
+    the duration of the sequence. For example, if a very fast motion
+    is desired for a long scene, the trajectory is going to be have
+    to be huge to respect the desired speed.
+    """
     displacement = np.array([speed*duration])/image_size
     edge_limit = 0.45
     rnd_point_in_image = np.array((random.uniform(-edge_limit, edge_limit), random.uniform(-edge_limit, edge_limit)))
@@ -106,6 +115,9 @@ def get_random_translations(speed, duration, image_size):
 
 
 def get_motion_string(image_name, object_speed, min_ang_vel_deg, max_ang_vel_deg, min_growth, max_growth, mfs=3, gbs=0):
+    """
+    Given an image and the desired trajectory, return a string that the simulator can read
+    """
     x0, y0, x1, y1 = get_random_translations(object_speed, duration, image_size)
 
     random_angular_v = random.uniform(min_ang_vel_deg, max_ang_vel_deg) * (1 if random.random() < 0.5 else -1)
@@ -121,49 +133,60 @@ def get_motion_string(image_name, object_speed, min_ang_vel_deg, max_ang_vel_deg
     return "{} {:.3f} {:.3f} {:.3f} {:.3f} {:.3f} {:.3f} {:.3f} {:.3f} {:.3f} {:.3f} {:.3f} {:.3f}\n".format(
         image_name, mfs, gbs, theta0, theta1, x0, x1, y0, y1, sx0, sx1, sy0, sy1), [x0, y0, x1, y1]
 
+
 def generate_scene_file_multispeed(output_path, image_size, duration, background_images, foreground_images,
                                    number_objects=15, median_filter_size=3, gaussian_blur_sigma=0,
                                    bg_min_ang_velocity_deg=0, bg_max_ang_velocity_deg=5, bg_min_velocity=5,
                                    bg_max_velocity=20, bg_growthmin=1.5, bg_growthmax=2.0,
                                    fg_min_ang_velocity_deg=0, fg_max_ang_velocity_deg=400, fg_min_velocity=5,
-                                   fg_max_velocity=500, fg_growthmin=0.5, fg_growthmax=1.5):
-
+                                   fg_max_velocity=500, fg_growthmin=0.5, fg_growthmax=1.5, proportion_variation=0.1,
+                                   fully_random=True):
+    """
+    Given foreground and background image directories and motion parameters, sample some random images
+    and give them velocities distributed across the range of velocities given. Velocities are sampled
+    linearly across the range, with a small percentage variation, as to guarantee the full 'spread' of motions.
+    Otherwise, if you don't want that behaviour, you may set 'fully_random' to True, in which case the speeds
+    will be chosen from a uniform distribution between fg_min_velocity and fg_max_velocity.
+    """
     f = open(output_path, "w")
-    print("fg_max={}".format(fg_max_velocity))
     f.write("{} {} {}\n".format(image_size[0], image_size[1], duration))
 
+    background_image_paths = []
+    for image_set in background_images:
+        background_image_paths.extend(sorted(glob.glob("{}/*.jpg".format(background_images[image_set]['path']))))
+    assert(len(background_image_paths) > 0)
+    background = random.choice(background_image_paths)
+
+    foreground_image_paths = []
+    num_images = np.random.randint(foreground_images['min_num'], foreground_images['max_num'])
+    print("{} foreground images".format(num_images))
+    for image_set in foreground_images:
+        if isinstance(foreground_images[image_set], dict):
+            all_paths = sorted(glob.glob("{}/*.png".format(foreground_images[image_set]['path'])))
+            selection = random.sample(all_paths, int(num_images*foreground_images[image_set]['proportion']+0.5))
+            foreground_image_paths.extend(selection)
+    assert(len(foreground_image_paths) > 0)
+    random.shuffle(foreground_image_paths)
+
     #Background
-    background = random.choice(background_images)
     random_speed = random.uniform(bg_min_velocity, bg_max_velocity)
     f.write(get_motion_string(background, random_speed, bg_min_ang_velocity_deg, bg_max_ang_velocity_deg,
                               bg_growthmin, bg_growthmax, median_filter_size, gaussian_blur_sigma)[0])
-
     #Foreground
-    coco_images = sorted(glob.glob("{}/*.png".format("/home/timo/Data2/coco_png")))
-    num_coco = int(number_objects*0.5)
-    coco_fg = random.sample(coco_images, num_coco)
-    foreground = random.sample(foreground_images, number_objects-num_coco)
-
-    # print(foreground)
     object_speeds = []
     obj_strings = []
-    for i, fg in enumerate(foreground):
-        v_vel = np.random.normal(fg_min_velocity, fg_max_velocity)
+    v_range = np.linspace(fg_min_velocity, fg_max_velocity, len(foreground_image_paths))
+    for i, fg in enumerate(foreground_image_paths):
+        if fully_random:
+            v_vel = np.random.normal(fg_min_velocity, fg_max_velocity)
+        else:
+            v_vel = v_range[i]*np.random.normal(1, proportion_variation)
+
         m_string, motion = get_motion_string(fg, v_vel, fg_min_ang_velocity_deg,
                                              fg_max_ang_velocity_deg, fg_growthmin, fg_growthmax,
                                              median_filter_size, gaussian_blur_sigma)
         object_speeds.append(motion)
         obj_strings.append(m_string)
-    for i, fg in enumerate(coco_fg):
-        v_vel = np.random.normal(fg_min_velocity, fg_max_velocity)
-        m_string, motion = get_motion_string(fg, v_vel, fg_min_ang_velocity_deg,
-                                             fg_max_ang_velocity_deg, 0.2, 0.6,
-                                             median_filter_size, gaussian_blur_sigma)
-        object_speeds.append(motion)
-        obj_strings.append(m_string)
-
-    increment = (fg_max_velocity-fg_min_velocity)/(number_objects-1)
-    speeds = np.linspace(fg_min_velocity, fg_max_velocity, number_objects)
 
     random.shuffle(obj_strings)
     for obj_string in obj_strings:
@@ -174,41 +197,10 @@ def generate_scene_file_multispeed(output_path, image_size, duration, background
     return object_speeds
 
 
-def generate_scene_file_single_speed(
-        output_path,
-        image_size,
-        duration,
-        background_images,
-        foreground_images,
-        number_objects,
-        bg_rotation=45,
-        bg_translation=0.1,
-        bg_growthmin=1.0,
-        bg_growthmax=2.0,
-        fg_growthmin=0.0,
-        fg_growthmax=1.5,
-        fg_translation=0.8,
-        fg_rotation=300,
-        median_filter_size=3,
-        gaussian_blur_sigma=0):
-
-    f = open(output_path, "w")
-    f.write("{} {} {}\n".format(image_size[0], image_size[1], duration))
-    # Background
-    background = random.choice(background_images)
-    f.write(get_motion_string(background, bg_rotation, bg_translation, bg_growthmin, bg_growthmax,
-                              median_filter_size, gaussian_blur_sigma))
-
-    #Foreground
-    foreground = random.sample(foreground_images, number_objects)
-    for fg in foreground:
-        f.write(get_motion_string(fg, fg_rotation, fg_translation, fg_growthmin, fg_growthmax,
-                                  median_filter_size, gaussian_blur_sigma))
-    f.close
-    print("Wrote new scene file to {}".format(output_path))
-
-
 def draw_object_motions(obj_motions):
+    """
+    For visualization purposes, this will draw the trajectories and the image sensor
+    """
     print(obj_motions)
     lines = [[(seg[0], seg[1]), (seg[2], seg[3])] for seg in obj_motions]
     print(lines)
@@ -223,6 +215,9 @@ def draw_object_motions(obj_motions):
     plt.show()
 
 def create_launch_file(simulator_config_path="/tmp/sim_config.txt", launch_path="/tmp/esim.launch"):
+    """
+    Generates a roslaunch launch file for ESIM
+    """
     print("Saving launch file to {}".format(launch_path))
     with open(launch_path, "w") as f:
         f.write("<launch>\n")
@@ -236,113 +231,67 @@ def create_launch_file(simulator_config_path="/tmp/sim_config.txt", launch_path=
         f.write("\n")
         f.write("</launch>")
 
-def generate_archtype_sequence(iteration, output_path_cfg, output_path, bag_name, sim_framerate):
-    min_ct = 0.1
-    max_ct = 1.5
-    num_seq = 280
-    ct_mean = (max_ct-min_ct)/(num_seq*1.0)*iteration+min_ct
-    generate_config_file(output_path_cfg, output_path, bag_name=bag_name, iteration_number=iteration,
-        sim_framerate=sim_framerate, contrast_threshold_mean=ct_mean, contrast_threshold_sigma=0.0)
-    params = {}
-    if iteration%4==0:
-        #Slow background with 0-4 slow speed objects
-        num_obj = int(random.uniform(1, 6))
-        params['number_objects'] = num_obj
-        params['bg_min_ang_velocity_deg'] = 0
-        params['bg_max_ang_velocity_deg'] = 5
-        params['bg_min_velocity'] = 0.5
-        params['bg_max_velocity'] = 10
-        params['bg_growthmin'] = 1.0
-        params['bg_growthmax'] = 1.5
-        params['fg_min_ang_velocity_deg'] = 0
-        params['fg_max_ang_velocity_deg'] = 5.0
-        params['fg_min_velocity'] = 0.5
-        params['fg_max_velocity'] = 30.0
-    elif iteration%4==1:
-       #Slow background with 5-20 med-fast speed objects
-        num_obj = int(random.uniform(5, 20))
-        params['number_objects'] = num_obj
-        params['bg_min_ang_velocity_deg'] = 0
-        params['bg_max_ang_velocity_deg'] = 15
-        params['bg_min_velocity'] = 5
-        params['bg_max_velocity'] = 25
-        params['bg_growthmin'] = 1.0
-        params['bg_growthmax'] = 1.5
-        params['fg_min_ang_velocity_deg'] = 10
-        params['fg_max_ang_velocity_deg'] = 45.0
-        params['fg_min_velocity'] = 30.0
-        params['fg_max_velocity'] = 350.0
-    elif iteration%4==2:
-        #Slow background with 5-10 medium speed objects
-        num_obj = int(random.uniform(5, 10))
-        params['number_objects'] = num_obj
-        params['bg_min_ang_velocity_deg'] = 0
-        params['bg_max_ang_velocity_deg'] = 15
-        params['bg_min_velocity'] = 5
-        params['bg_max_velocity'] = 25
-        params['bg_growthmin'] = 1.0
-        params['bg_growthmax'] = 1.5
-        params['fg_min_ang_velocity_deg'] = 0
-        params['fg_max_ang_velocity_deg'] = 15.0
-        params['fg_min_velocity'] = 20.0
-        params['fg_max_velocity'] = 80.0
-    elif iteration%4==3:
-        #Slow background with 1-20 unconstrained objects
-        num_obj = int(random.uniform(10, 30))
-        params['number_objects'] = num_obj
-        params['bg_min_ang_velocity_deg'] = 0
-        params['bg_max_ang_velocity_deg'] = 45
-        params['bg_min_velocity'] = 0.1
-        params['bg_max_velocity'] = 40
-        params['bg_growthmin'] = 1.0
-        params['bg_growthmax'] = 1.5
-        params['fg_min_ang_velocity_deg'] = 0
-        params['fg_max_ang_velocity_deg'] = 60.0
-        params['fg_min_velocity'] = 0.1
-        params['fg_max_velocity'] = 600.0
-    params['fg_growthmin'] = 0.4
-    params['fg_growthmax'] = 1.2
-    return params
+def read_json(fname):
+    assert(os.path.exists(fname))
+    with open(fname) as json_file:
+        data = json.load(json_file, object_hook=OrderedDict)
+        return data
 
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Scene file generator')
-    parser.add_argument('--background_images', type=str, help='Background image folder path',
-                        default="/home/timo/Data2/Coco")
-    parser.add_argument('--foreground_images', type=str, help='Foreground image folder', default="../objects")
-    parser.add_argument('--number_objects', type=int, help='Number of foreground images', default=6)
-    parser.add_argument('--output_path', type=str, help='Path to save scene file', default="/tmp/autoscene.txt")
-    parser.add_argument('--output_path_cfg', type=str, help='Path to save config file', default="/tmp/config2d.txt")
-    parser.add_argument('--image_width', type=int, help='Image width', default=128)
-    parser.add_argument('--image_height', type=int, help='Image height', default=128)
-    parser.add_argument('--scene_duration', type=float, help='How long should the sequence go', default=1.0)
-    parser.add_argument('--bag_name', type=str, help='Which bag number is this - used for naming', default=0)
-    parser.add_argument('--iteration_number', type=int, help='Which iteration of the simulator is this?')
-    parser.add_argument('--sim_framerate', type=int, help='Framerate of the simulator')
-    parser.add_argument('--existing_scenes', type=str, help='A file with a list of scenes to use, if it exists', default=None)
+    parser.add_argument('generator_config', type=str, help='Scene generator settings', default="..generator_config/slow_velocity_slow_rotation.json")
+    parser.add_argument('--output_path', type=str, help='Path to save scene file', default=None)
+    parser.add_argument('--output_path_cfg', type=str, help='Path to save config file', default=None)
+    parser.add_argument('--existing_scenes', type=str, help='If you have scene files already, you may pass a
+            file with a list of them and the generator will use these instead', default=None)
+
+    #Scene params
+    parser.add_argument('--image_width', type=int, help='Image width (pixels)', default=64)
+    parser.add_argument('--image_height', type=int, help='Image height (pixels)', default=64)
+    parser.add_argument('--scene_duration', type=float, help='How long should the sequence go (seconds)', default=60.0)
+    parser.add_argument('--bag_name', type=str, help='Where to save output bag. If left empty, will save to /tmp/<scene_id>_out.bag', default=None)
+    parser.add_argument('--scene_id', type=int, help='ID number, is appended to files saved', default=0)
+
+    #Simulator params
+    parser.add_argument('--sim_framerate', type=int, help='Output framerate of the simulator', default=None)
+    parser.add_argument('--contrast_threshold_mean', type=float, help='CTs will be sampled from a normal dist. with this mean', default=None)
+    parser.add_argument('--contrast_threshold_sigma', type=float, help='CTs will be sampled from a normal dist. with this stdev', default=None)
+    parser.add_argument('--sim_framerate', type=int, help='Output framerate of the simulator', default=200)
 
     args = parser.parse_args()
-    background_images = args.background_images
-    foreground_images = os.path.abspath(args.foreground_images)
-    number_objects = args.number_objects
 
-    output_path = '/tmp/{:09d}_autoscene.txt'.format(args.iteration_number)
-    output_path_cfg = '/tmp/{:09d}_config2d.txt'.format(args.iteration_number)
+    config = read_json(args.generator_config)
+
+    output_path = '/tmp/{:09d}_autoscene.txt'.format(args.scene_id) if args.output_path is None else args.output_path
+    output_path_cfg = '/tmp/{:09d}_config2d.txt'.format(args.scene_id) if args.output_path_cfg is None else args.output_path_cfg
     image_size = (args.image_width, args.image_height)
     duration = args.scene_duration
-    bag_name = '/tmp/{:09d}_out.bag'.format(args.iteration_number)
-    print("saving bag as {}".format(bag_name))
+    bag_name = '/tmp/{:09d}_out.bag'.format(args.scene_id) if args.bag_name is None else args.bag_name
 
-    background_images = sorted(glob.glob("{}/*.jpg".format(background_images)))
-    foreground_images = sorted(glob.glob("{}/*.png".format(foreground_images)))
-
-    iteration = args.iteration_number
-    fg_params = generate_archtype_sequence(iteration, output_path_cfg, output_path, bag_name=bag_name, sim_framerate=args.sim_framerate)
-    print(fg_params)
-
+    #Scene generation
     if args.existing_scenes is None:
-        motions = generate_scene_file_multispeed(output_path, image_size, duration, background_images, foreground_images, **fg_params)
+        motion_params = config['foreground_params']
+        motion_params.update(config['background_params'])
+        motions = generate_scene_file_multispeed(output_path, image_size, duration,
+                config['background_images'], config['foreground_images'], **motion_params)
     else:
-        motions = pd.read_csv(args.existing_scenes, delimiter=',', header=None).values.tolist()[args.iteration_number][0]
+        motions = pd.read_csv(args.existing_scenes, delimiter=',', header=None).values.tolist()[args.scene_id][0]
         copyfile(motions, output_path)
+
+    #Simulator config generation
+    camera_params = config['camera_params']
+    print(camera_params)
+    if args.sim_framerate is not None:
+        camera_params['sim_framerate'] = args.sim_framerate
+    if args.sim_framerate is not None:
+        camera_params['contrast_threshold_mean'] = args.contrast_threshold_mean
+    if args.sim_framerate is not None:
+        camera_params['contrast_threshold_sigma'] = args.contrast_threshold_sigma
+    generate_config_file(output_path_cfg, output_path, bag_name=bag_name, scene_id=args.scene_id,
+            **config['camera_params'])
+
+    #Launch file generation
     create_launch_file(simulator_config_path=output_path_cfg)
+
+    print("Rosbag save path = {}".format(bag_name))
