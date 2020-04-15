@@ -28,4 +28,4 @@ Note that the CLI arguments for the contrast thresholds are optional and in this
 Once this is done, you can use `/scripts/2d_launch_esim.py` to launch ROS itself. The required arguments are the location of the launch file, eg: 
 ```python scripts/2d_launch_esim.py --launch_file_path="/tmp/esim.launch"```
 
-All of this is also in a bash script, so you could also just run 2d_simulator_generator.sh.
+All of this is also in a bash script, so you could also just run `2d_simulator_generator.sh`.
