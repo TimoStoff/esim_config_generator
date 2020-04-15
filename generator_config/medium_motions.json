@@ -5,8 +5,8 @@
 		"fg_max_ang_velocity_deg": 15.0,
 		"fg_min_velocity": 20,
 		"fg_max_velocity": 80,
-		"fg_growthmin": 0.5,
-		"fg_growthmax": 1.5
+		"fg_growthmin": 0.3,
+		"fg_growthmax": 0.9
         },
     "background_params": {
 		"bg_min_ang_velocity_deg": 0,

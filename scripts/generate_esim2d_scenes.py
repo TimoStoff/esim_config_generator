@@ -20,7 +20,6 @@ def generate_config_file(output_path_cfg, output_path, contrast_threshold_mean=0
     """
     Generate the config file for the simulator (ie event camera settings)
     """
-    print("sim fr = {}".format(sim_framerate))
     fcfg = open(output_path_cfg, "w")
     fcfg.write("\n--vmodule=data_provider_online_simple=0" +
                "\n--data_source=1" +
@@ -240,24 +239,29 @@ def read_json(fname):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Scene file generator')
-    parser.add_argument('generator_config', type=str, help='Scene generator settings', default="..generator_config/slow_velocity_slow_rotation.json")
+    parser.add_argument('generator_config', type=str, help='Scene generator settings',
+            default="..generator_config/slow_velocity_slow_rotation.json")
     parser.add_argument('--output_path', type=str, help='Path to save scene file', default=None)
     parser.add_argument('--output_path_cfg', type=str, help='Path to save config file', default=None)
-    parser.add_argument('--existing_scenes', type=str, help='If you have scene files already, you may pass a
-            file with a list of them and the generator will use these instead', default=None)
+    parser.add_argument('--existing_scenes', type=str, help='If you have scene files already,\
+            you may pass a file with a list of them and the generator will use these instead', default=None)
 
     #Scene params
     parser.add_argument('--image_width', type=int, help='Image width (pixels)', default=64)
     parser.add_argument('--image_height', type=int, help='Image height (pixels)', default=64)
-    parser.add_argument('--scene_duration', type=float, help='How long should the sequence go (seconds)', default=60.0)
-    parser.add_argument('--bag_name', type=str, help='Where to save output bag. If left empty, will save to /tmp/<scene_id>_out.bag', default=None)
+    parser.add_argument('--scene_duration', type=float, help='How long should the sequence go\
+            (seconds)', default=10.0)
+    parser.add_argument('--bag_name', type=str, help='Where to save output bag. If left empty,\
+            will save to /tmp/<scene_id>_out.bag', default=None)
     parser.add_argument('--scene_id', type=int, help='ID number, is appended to files saved', default=0)
 
     #Simulator params
-    parser.add_argument('--sim_framerate', type=int, help='Output framerate of the simulator', default=None)
-    parser.add_argument('--contrast_threshold_mean', type=float, help='CTs will be sampled from a normal dist. with this mean', default=None)
-    parser.add_argument('--contrast_threshold_sigma', type=float, help='CTs will be sampled from a normal dist. with this stdev', default=None)
-    parser.add_argument('--sim_framerate', type=int, help='Output framerate of the simulator', default=200)
+    parser.add_argument('--sim_framerate', type=int, help='Output framerate of the simulator.\
+            If left empty, use value in config.', default=None)
+    parser.add_argument('--contrast_threshold_mean', type=float, help='CTs will be sampled from\
+            a normal dist. with this mean. If left empty, use value in config.', default=None)
+    parser.add_argument('--contrast_threshold_sigma', type=float, help='CTs will be sampled from\
+            a normal dist. with this stdev. If left empty, use value in config.', default=None)
 
     args = parser.parse_args()
 
@@ -281,12 +285,11 @@ if __name__ == "__main__":
 
     #Simulator config generation
     camera_params = config['camera_params']
-    print(camera_params)
     if args.sim_framerate is not None:
         camera_params['sim_framerate'] = args.sim_framerate
-    if args.sim_framerate is not None:
+    if args.contrast_threshold_mean is not None:
         camera_params['contrast_threshold_mean'] = args.contrast_threshold_mean
-    if args.sim_framerate is not None:
+    if args.contrast_threshold_sigma is not None:
         camera_params['contrast_threshold_sigma'] = args.contrast_threshold_sigma
     generate_config_file(output_path_cfg, output_path, bag_name=bag_name, scene_id=args.scene_id,
             **config['camera_params'])
