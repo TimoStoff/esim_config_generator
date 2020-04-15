@@ -1,3 +1,7 @@
+"""
+From the paper 'Stoffregen et al., How to Train Your Event Camera Neural Network'
+(https://timostoff.github.io/20ecnn)
+"""
 import roslaunch
 import rospy
 import argparse

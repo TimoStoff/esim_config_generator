@@ -1,4 +1,7 @@
-# -*- coding: utf-8 -*-
+"""
+From the paper 'Stoffregen et al., How to Train Your Event Camera Neural Network'
+(https://timostoff.github.io/20ecnn)
+"""
 import argparse
 import numpy as np
 import pandas as pd
