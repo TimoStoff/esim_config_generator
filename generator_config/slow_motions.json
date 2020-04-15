@@ -18,11 +18,11 @@
         },
 	"foreground_images": {
 		"png_dataset": {
-			"path": "/home/timo/Data2/esim_objects",
+			"path": "/home/path/to/esim_objects",
 			"proportion": 0.8
 		},	
 		"coco_dataset": {
-			"path": "/home/timo/Data2/coco_png",
+			"path": "/home/path/to/coco_png",
 			"proportion": 0.2
 		},	
 		"min_num": 2,
@@ -30,7 +30,7 @@
     },
 	"background_images": {
 		"coco_dataset": {
-			"path": "/home/timo/Data2/coco_subset"
+			"path": "/home/path/to/coco"
 		}	
     },
 	"camera_params": {
