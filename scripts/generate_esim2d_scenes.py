@@ -17,7 +17,7 @@ from matplotlib.patches import Rectangle
 
 PI = 3.1415926
 
-def generate_config_file(output_path_cfg, output_path, contrast_threshold_mean=0.75, contrast_threshold_sigma=0.3, ct_diff_sigma=0.1,
+def generate_config_file(output_path_cfg, output_path, contrast_threshold_mean=0.75, ct_diff_sigma=0.1,
                          min_C=0.01, max_C=8, hard_c_t_sigmas=0.0001, refractory_period_ns=1000000,
                          bag_name="/tmp/out.bag", scene_id=0, sim_framerate=100):
     """
@@ -30,6 +30,7 @@ def generate_config_file(output_path_cfg, output_path, contrast_threshold_mean=0
                "\n--path_to_sequence_file={}".format(output_path) +
                "\n")
 
+    print("mean={}, sigma={}".format(contrast_threshold_mean, ct_diff_sigma))
     c1 = contrast_threshold_mean
     c2 = np.random.normal(1, ct_diff_sigma)*c1
     if scene_id%2==0:
@@ -250,8 +251,8 @@ if __name__ == "__main__":
             you may pass a file with a list of them and the generator will use these instead', default=None)
 
     #Scene params
-    parser.add_argument('--image_width', type=int, help='Image width (pixels)', default=64)
-    parser.add_argument('--image_height', type=int, help='Image height (pixels)', default=64)
+    parser.add_argument('--image_width', type=int, help='Image width (pixels)', default=256)
+    parser.add_argument('--image_height', type=int, help='Image height (pixels)', default=256)
     parser.add_argument('--scene_duration', type=float, help='How long should the sequence go\
             (seconds)', default=10.0)
     parser.add_argument('--bag_name', type=str, help='Where to save output bag. If left empty,\
@@ -293,7 +294,7 @@ if __name__ == "__main__":
     if args.contrast_threshold_mean is not None:
         camera_params['contrast_threshold_mean'] = args.contrast_threshold_mean
     if args.contrast_threshold_sigma is not None:
-        camera_params['contrast_threshold_sigma'] = args.contrast_threshold_sigma
+        camera_params['ct_diff_sigma'] = args.contrast_threshold_sigma
     generate_config_file(output_path_cfg, output_path, bag_name=bag_name, scene_id=args.scene_id,
             **config['camera_params'])
 

@@ -7,7 +7,20 @@
 		"fg_max_velocity": 600,
 		"fg_growthmin": 0.5,
 		"fg_growthmax": 2.0
-        },
+    },
+	"foreground_images": {
+		"png_dataset": {
+			"path": "/home/timo/Data2/coco_png",
+			"proportion": 1.0
+		},	
+		"min_num": 5,
+		"max_num" : 10
+    },
+	"background_images": {
+		"coco_dataset": {
+			"path": "/home/timo/Data2/coco_subset"
+		}	
+    },
     "background_params": {
 		"bg_min_ang_velocity_deg": 0,
 		"bg_max_ang_velocity_deg": 45,
@@ -16,27 +29,9 @@
 		"bg_growthmin": 1.0,
 		"bg_growthmax": 1.5
         },
-	"foreground_images": {
-		"png_dataset": {
-			"path": "/home/timo/Data2/esim_objects",
-			"proportion": 0.8
-		},	
-		"coco_dataset": {
-			"path": "/home/timo/Data2/coco_png",
-			"proportion": 0.2
-		},	
-		"min_num": 10,
-		"max_num" : 30
-    },
-	"background_images": {
-		"coco_dataset": {
-			"path": "/home/timo/Data2/coco_subset"
-		}	
-    },
 	"camera_params": {
-		"contrast_threshold_mean":0.75,
-		"contrast_threshold_sigma":0.3,
-		"ct_diff_sigma":0.1,
+		"contrast_threshold_mean":0.3,
+		"ct_diff_sigma":0.0,
 		"min_C":0.01,
 		"max_C":8,
 		"hard_c_t_sigmas":0.0001,
