@@ -17,7 +17,7 @@ from matplotlib.patches import Rectangle
 
 PI = 3.1415926
 
-def generate_config_file(output_path_cfg, output_path, contrast_threshold_mean=0.75, contrast_threshold_sigma=0.3, ct_diff_sigma=0.1,
+def generate_config_file(output_path_cfg, output_path, contrast_threshold_mean=0.75, ct_diff_sigma=0.1,
                          min_C=0.01, max_C=8, hard_c_t_sigmas=0.0001, refractory_period_ns=1000000,
                          bag_name="/tmp/out.bag", scene_id=0, sim_framerate=100):
     """
@@ -263,8 +263,8 @@ if __name__ == "__main__":
             If left empty, use value in config.', default=None)
     parser.add_argument('--contrast_threshold_mean', type=float, help='CTs will be sampled from\
             a normal dist. with this mean. If left empty, use value in config.', default=None)
-    parser.add_argument('--contrast_threshold_sigma', type=float, help='CTs will be sampled from\
-            a normal dist. with this stdev. If left empty, use value in config.', default=None)
+    parser.add_argument('--contrast_threshold_sigma', type=float, help='Neg CT will differ to pos CT\
+            by NegCT = PosCT * N(1, contrast_threshold_sigma)', default=None)
 
     args = parser.parse_args()
 
@@ -293,7 +293,7 @@ if __name__ == "__main__":
     if args.contrast_threshold_mean is not None:
         camera_params['contrast_threshold_mean'] = args.contrast_threshold_mean
     if args.contrast_threshold_sigma is not None:
-        camera_params['contrast_threshold_sigma'] = args.contrast_threshold_sigma
+        camera_params['ct_diff_sigma'] = args.contrast_threshold_sigma
     generate_config_file(output_path_cfg, output_path, bag_name=bag_name, scene_id=args.scene_id,
             **config['camera_params'])
 
