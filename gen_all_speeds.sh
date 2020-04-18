@@ -12,9 +12,12 @@ do
    let sceneid3=$i*4+3
    echo $sceneid0
    python scripts/generate_esim2d_scenes.py generator_config/slow_motions.json --scene_id=$sceneid0 --contrast_threshold_mean=$ct_mean --contrast_threshold_sigma=0
+   python scripts/2d_launch_esim.py --launch_file_path="/tmp/esim.launch"
    python scripts/generate_esim2d_scenes.py generator_config/fast_motions.json --scene_id=$sceneid1 --contrast_threshold_mean=$ct_mean --contrast_threshold_sigma=0
+   python scripts/2d_launch_esim.py --launch_file_path="/tmp/esim.launch"
    python scripts/generate_esim2d_scenes.py generator_config/various_motions.json --scene_id=$sceneid2 --contrast_threshold_mean=$ct_mean --contrast_threshold_sigma=0
+   python scripts/2d_launch_esim.py --launch_file_path="/tmp/esim.launch"
    python scripts/generate_esim2d_scenes.py generator_config/medium_motions.json --scene_id=$sceneid3 --contrast_threshold_mean=$ct_mean --contrast_threshold_sigma=0
-  # python scripts/2d_launch_esim.py --launch_file_path="/tmp/esim.launch"
+   python scripts/2d_launch_esim.py --launch_file_path="/tmp/esim.launch"
 done
 
