@@ -1,7 +1,7 @@
 ## About
 This code allows generating flying chairs style sequences for the Multi-Object-2D simulator from [ESIM](https://github.com/uzh-rpg/rpg_esim). This code was used to generate sequences for [How to Train Your Event Camera Neural Network](https://timostoff.github.io/20ecnn), please cite this work if you use this in an academic context.
 ```
-@Article{Stoffregen20arxiv,
+@Article{Stoffregen20eccv,
   author        = {T. Stoffregen, C. Scheerlinck, D. Scaramuzza, T. Drummond, N. Barnes, L. Kleeman, R. Mahoney},
   title         = {Reducing the Sim-to-Real Gap for Event Cameras},
   journal       = eccv,
