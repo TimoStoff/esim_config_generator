@@ -3,12 +3,10 @@ This code allows generating flying chairs style sequences for the Multi-Object-2
 ```
 @Article{Stoffregen20arxiv,
   author        = {T. Stoffregen, C. Scheerlinck, D. Scaramuzza, T. Drummond, N. Barnes, L. Kleeman, R. Mahoney},
-  title         = {How to Train Your Event Camera Neural Network},
-  journal       = arxiv,
+  title         = {Reducing the Sim-to-Real Gap for Event Cameras},
+  journal       = eccv,
   year          = 2020,
-  month         = march,
-  url           = {https://arxiv.org/abs/2003.09078},
-  arxivid       = {2003.09078}
+  month         = aug
 }
 ```
 
@@ -23,7 +21,7 @@ The image paths in `background_images` _must_ be jpg images, again for mysteriou
 The main work is done in `scripts/generate_esim2d_scenes.py`. This file takes a configuration file (examples can be found in `generator_config`) and some command line arguments that augment/modify the config settings if desired and generates a scene file (this contains the trajectories, the corresponding images, the image size and the sequence duration), an esim config file (this contains contrast thresholds, biases etc) and a ROS launch file.
 The default location where these files will be created is `/tmp/000000000_autoscene.txt`, `/tmp/000000000_config2d.txt` and `/tmp/esim.launch` respectively. As an example, you could execute:
 ```
-python scripts/generate_esim2d_scenes.py generator_config/slow_motions.json --scene_id=0 --contrast_threshold_mean=$ct_mean --contrast_threshold_sigma=0.1
+python scripts/generate_esim2d_scenes.py generator_config/slow_motions.json --scene_id=0 --contrast_threshold_mean=0.3 --contrast_threshold_sigma=0.1
 ```
 Note that the CLI arguments for the contrast thresholds are optional and in this case overrule the values in the config file.
 
@@ -31,3 +29,13 @@ Once this is done, you can use `/scripts/2d_launch_esim.py` to launch ROS itself
 ```python scripts/2d_launch_esim.py --launch_file_path="/tmp/esim.launch"```
 
 All of this is also in a bash script, so you could also just run `2d_simulator_generator.sh`.
+
+
+## Generating datasets from existing configs
+You can also generate datasets from existing scene and config files.
+For example, to generate the dataset from "Reducing the Sim-to-Real Gap for Event Cameras", you can first download COCO dataset as well as a few custom foreground images you can get from [here](https://drive.google.com/drive/folders/1F6fNgZFmMvGkw6sAwDFE7j8Q7EH3TMve?usp=sharing)
+Then, you need to download the config and scene files for the dataset from [here](https://drive.google.com/drive/folders/1WIM2Cid6uhwFtnzrmToVa8WODUY3OWds?usp=sharing)
+By default, these go into /tmp (see inside the autoscene files to see the paths), but you can easily change this using [sed](https://stackoverflow.com/questions/11392478/how-to-replace-a-string-in-multiple-files-in-linux-command-line).
+Then, just run `scripts/generate_preset.py` eg:
+```python scripts/generate_preset.py /path/to/config/files```
+Note that you will need ROS installed and sourced.
