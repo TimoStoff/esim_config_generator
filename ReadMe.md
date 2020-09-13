@@ -34,7 +34,7 @@ All of this is also in a bash script, so you could also just run `2d_simulator_g
 ## Generating datasets from existing configs
 You can also generate datasets from existing scene and config files.
 For example, to generate the dataset from "Reducing the Sim-to-Real Gap for Event Cameras", you can first download COCO dataset as well as a few custom foreground images you can get from [here](https://drive.google.com/drive/folders/1F6fNgZFmMvGkw6sAwDFE7j8Q7EH3TMve?usp=sharing)
-Then, you need to download the config and scene files for the dataset from [here](https://drive.google.com/drive/folders/1WIM2Cid6uhwFtnzrmToVa8WODUY3OWds?usp=sharing)
+Then, you need to download the config and scene files for the dataset from [here](https://drive.google.com/drive/folders/1ILoFnR5BHR17F0VGEzR0JIBfisw1nkc4?usp=sharing)
 By default, these go into /tmp (see inside the autoscene files to see the paths), but you can easily change this using [sed](https://stackoverflow.com/questions/11392478/how-to-replace-a-string-in-multiple-files-in-linux-command-line).
 Then, just run `scripts/generate_preset.py` eg:
 ```python scripts/generate_preset.py /path/to/config/files```
