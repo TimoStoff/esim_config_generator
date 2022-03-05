@@ -17,6 +17,9 @@ class ProcessListener(roslaunch.pmon.ProcessListener):
 
 
 def init_launch(launchfile, process_listener):
+    global process_generate_running
+    process_generate_running = True
+    
     uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
     roslaunch.configure_logging(uuid)
     launch = roslaunch.parent.ROSLaunchParent(
